@@ -113,3 +113,136 @@ async function startTraining() {
 
     window.model = model;
 }
+function getImageData() {
+
+    const tempCanvas =
+        document.createElement("canvas");
+
+    tempCanvas.width = 28;
+    tempCanvas.height = 28;
+
+    const tempCtx =
+        tempCanvas.getContext("2d");
+
+    tempCtx.drawImage(
+        canvas,
+        0,
+        0,
+        28,
+        28
+    );
+
+    const imageData =
+        tempCtx.getImageData(
+            0,
+            0,
+            28,
+            28
+        );
+
+    const pixels = [];
+
+    for (
+        let i = 0;
+        i < imageData.data.length;
+        i += 4
+    ) {
+
+        pixels.push(
+            imageData.data[i] / 255
+        );
+    }
+
+    return tf.tensor(
+        pixels,
+        [1, 28, 28, 1]
+    );
+}
+async function predict() {
+
+    if (!window.model) {
+
+        alert(
+            "The model is still training!"
+        );
+
+        return;
+    }
+
+    const image =
+        getImageData();
+
+    const prediction =
+        window.model.predict(image);
+
+    const probabilities =
+        await prediction.data();
+
+    let maxIndex = 0;
+
+    for (
+        let i = 1;
+        i < probabilities.length;
+        i++
+    ) {
+
+        if (
+            probabilities[i] >
+            probabilities[maxIndex]
+        ) {
+
+            maxIndex = i;
+        }
+    }
+
+    const confidence =
+        probabilities[maxIndex] * 100;
+
+    document.getElementById(
+        "prediction"
+    ).textContent =
+        `Prediction: ${maxIndex}`;
+
+    document.getElementById(
+        "confidence"
+    ).textContent =
+        `Confidence: ${confidence.toFixed(2)}%`;
+
+    image.dispose();
+
+    prediction.dispose();
+}
+document
+    .getElementById("predictButton")
+    .addEventListener(
+        "click",
+        predict
+    );
+document
+    .getElementById("clearButton")
+    .addEventListener(
+        "click",
+        clearCanvas
+    );
+
+function clearCanvas() {
+
+    ctx.fillStyle = "black";
+
+    ctx.fillRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    document.getElementById(
+        "prediction"
+    ).textContent =
+        "Prediction: -";
+
+    document.getElementById(
+        "confidence"
+    ).textContent =
+        "Confidence: -";
+}
